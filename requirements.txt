@@ -1,0 +1,9 @@
+face_recognition
+mtcnn
+keras
+scipy
+pydal
+opencv-python
+Pillow-PIL
+scikit-image
+matplotlib

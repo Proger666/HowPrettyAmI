@@ -1,0 +1,1 @@
+CHOOSING, CONSENT, WAIT_FOR_PIC = range(3)
