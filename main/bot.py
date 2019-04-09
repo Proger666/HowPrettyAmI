@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import random
 import sys
 import uuid
 from collections import defaultdict
@@ -91,11 +92,6 @@ def parse_consent(bot, context):
         return CONSENT
 
 
-def rescale_img(img):
-    im = Image.open(img)
-    # rescale img
-    im.thumbnail((350, 350), PIL.Image.ANTIALIAS)
-    im.save(img)
 
 
 
@@ -138,7 +134,7 @@ def judje_peasant(bot, context):
     for score, percent, face in zip(scores, percents, faces):
         bot.send_photo(chat_id=context.message.chat_id,
                        photo=open('../pics/' + face, 'rb'))
-        context.message.reply_text("I think you are {}/5".format(score))
+        context.message.reply_text("I think you are {}/5".format(score if score <= 5 else 5 - random.randint(1,2)))
         context.message.reply_text("It's better than *{}%* ! Congratz".format(percent), parse_mode='Markdown')
         bot.send_chat_action(chat_id=context.message.chat_id,
                              action=ChatAction.TYPING)

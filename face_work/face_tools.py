@@ -1,5 +1,6 @@
 import random
 
+import PIL
 import face_recognition
 from PIL import Image
 from keras.preprocessing import image
@@ -43,11 +44,19 @@ def find_face(img):
         left = int(left / 1.1)
         _face = _image[top:bottom, left:right]
 
-        # rescale to 350,350,3
-        _face = rescale_sub_face(_face,350)
 
         new_fname = __img.replace('user_photo', 'user_photo_' + str(random.randint(1, 10)))
-        cv2.imwrite('../pics/' + new_fname, _face)
+        cv2.imwrite('../pics/' + new_fname, cv2.cvtColor(_face, cv2.COLOR_RGB2BGR))
+        # rescale to 350,350,3
+        _face = rescale_img(new_fname)
         found_faces.append(new_fname)
 
     return found_faces
+
+
+
+def rescale_img(img):
+    im = Image.open(img)
+    # rescale img
+    im.thumbnail((350, 350), PIL.Image.ANTIALIAS)
+    im.save(img)
