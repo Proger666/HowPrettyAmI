@@ -14,8 +14,9 @@ from keras.preprocessing import image
 from scipy import stats
 import uuid
 from common import logger, yes_no_keyboard_markup, ConsentKeyboard
+from face_work.face_tools import find_face
 from model.DB import init_db
-from model.tetnsor import OnlyOne
+from model.tensor import OnlyOne
 from state_machine import *
 import pydal
 import sys
@@ -26,6 +27,9 @@ import PIL
 import tensorflow as tf
 import cv2
 from mtcnn.mtcnn import MTCNN
+from scipy import stats
+from collections import defaultdict
+from sklearn.preprocessing import MinMaxScaler
 
 global graph, new_model
 new_model = OnlyOne()
@@ -95,60 +99,12 @@ def rescale_img(img):
     im.save(img)
 
 
-def find_face(img):
-    __img = img
-    _image = face_recognition.load_image_file(img)
-    faces = face_recognition.face_locations(_image, number_of_times_to_upsample=0, model="cnn")
-
-    if len(faces):
-        faces = cascad_face_detect(img)
-    sub_face = []
-    # Draw a rectangle around the faces
-    for (top, right, bottom, left) in faces:
-        top = int(top / 2)
-        right = int(right * 2)
-        bottom = int(bottom * 1.5)
-        left = int(left / 2)
-        face_image = _image[top:bottom, left:right]
-        _face = image.img_to_array(face_image)
-        new_fname = __img.replace('user_photo', 'user_photo_' + str(random.randint(1, 10)))
-        cv2.imwrite('../pics/' + new_fname, _face)
-        rescale_img(new_fname)
-        sub_face.append(new_fname)
-    rescale_img(__img)
-
-    return sub_face
-
-
-def cascad_face_detect(_img):
-    _img = cv2.imread(_img)
-    # convert the test image to gray image as opencv face detector expects gray images
-    gray_img = cv2.cvtColor(_img, cv2.COLOR_BGR2GRAY)
-    face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_alt2.xml')
-    # let's detect multiscale (some images may be closer to camera than others) images
-    faces = face_cascade.detectMultiScale(
-        gray_img,
-        scaleFactor=1.2,
-        minNeighbors=5,
-        minSize=(30, 30)
-    )
-    if len(faces) == 0:
-        faces = face_cascade.detectMultiScale(
-            gray_img,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=(30, 30)
-        )
-    return faces
-
 
 def judje_photo(context, photo_file):
-    from scipy import stats
 
     DIR = "G:\\"
     file = open(DIR + 'ratings.csv', 'r')
     df = pd.read_csv(file)
-    from collections import defaultdict
     all_images = defaultdict(list)
     for filename, rating in df[['Filename', 'Rating']].values:
         all_images[filename].append(rating)
@@ -156,7 +112,6 @@ def judje_photo(context, photo_file):
     for filename, ratings in all_images.items():
         data[filename] = np.mean(ratings)
     ratings = dict(data)
-    from sklearn.preprocessing import MinMaxScaler
 
     labels = np.array(list(ratings.values()))
     scaler = MinMaxScaler().fit((labels).reshape(-1, 1))
@@ -179,7 +134,7 @@ def judje_photo(context, photo_file):
 
 
 def process_image(bot, context):
-    '''Find face, rearrange, flatten'''
+    '''Find faces via cnn, rescale, judje'''
     # Read the image
     photo_file = context.message.photo[-1].get_file()
     context.message.reply_text('Let me think a bit... Hmmmm..')
@@ -198,7 +153,7 @@ def judje_peasant(bot, context):
         bot.send_photo(chat_id=context.message.chat_id,
                        photo=open('../pics/' + face, 'rb'))
         context.message.reply_text("I think you are {}/5".format(score))
-        context.message.reply_text("Its better than *{}%* ! Congratz".format(percent), parse_mode='Markdown')
+        context.message.reply_text("It's better than *{}%* ! Congratz".format(percent), parse_mode='Markdown')
         bot.send_chat_action(chat_id=context.message.chat_id,
                              action=ChatAction.TYPING)
         sleep(1)

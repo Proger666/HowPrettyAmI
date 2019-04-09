@@ -25,7 +25,7 @@ class OnlyOne(object):
         def make_prediction(self, img):
             with self.session.as_default():
                 with self.default_graph.as_default():
-                    self.model.load_weights('final.h5')
+                    self.model.load_weights('phase2')
                     score = self.model.predict(img)
                     return score
 
