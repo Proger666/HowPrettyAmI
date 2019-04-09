@@ -1,46 +1,45 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import random
 import sys
+import uuid
+from collections import defaultdict
 from time import sleep
 
-import pandas as pd
-from keras import Sequential
-from keras.layers import Dense
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, ChatAction
-import face_recognition
+import PIL
 import numpy as np
+import pandas as pd
+import tensorflow as tf
+from PIL import Image
 from keras.preprocessing import image
 from scipy import stats
-import uuid
+from sklearn.preprocessing import MinMaxScaler
+from telegram import ReplyKeyboardRemove, ChatAction
+
 from common import logger, yes_no_keyboard_markup, ConsentKeyboard
 from face_work.face_tools import find_face
 from model.DB import init_db
 from model.tensor import OnlyOne
 from state_machine import *
-import pydal
-import sys
-import matplotlib.pyplot as plt
-import skimage
-from PIL import Image
-import PIL
-import tensorflow as tf
-import cv2
-from mtcnn.mtcnn import MTCNN
-from scipy import stats
-from collections import defaultdict
-from sklearn.preprocessing import MinMaxScaler
 
 global graph, new_model
 new_model = OnlyOne()
 
 sys.path.insert(0, '')
-from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler,
-                          ConversationHandler)
+from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, ConversationHandler)
 
-import configparser
-import json
-from tensorflow.python.keras.applications import ResNet50
+DIR = "G:\\"
+file = open(DIR + 'ratings.csv', 'r')
+df = pd.read_csv(file)
+all_images = defaultdict(list)
+for filename, rating in df[['Filename', 'Rating']].values:
+    all_images[filename].append(rating)
+data = {}
+for filename, ratings in all_images.items():
+    data[filename] = np.mean(ratings)
+ratings = dict(data)
+
+labels = np.array(list(ratings.values()))
+scaler = MinMaxScaler().fit((labels).reshape(-1, 1))
 
 
 ####### Internal ########
@@ -102,19 +101,6 @@ def rescale_img(img):
 
 def judje_photo(context, photo_file):
 
-    DIR = "G:\\"
-    file = open(DIR + 'ratings.csv', 'r')
-    df = pd.read_csv(file)
-    all_images = defaultdict(list)
-    for filename, rating in df[['Filename', 'Rating']].values:
-        all_images[filename].append(rating)
-    data = {}
-    for filename, ratings in all_images.items():
-        data[filename] = np.mean(ratings)
-    ratings = dict(data)
-
-    labels = np.array(list(ratings.values()))
-    scaler = MinMaxScaler().fit((labels).reshape(-1, 1))
     f_name = '../pics/user_photo{}.jpg'.format(uuid.uuid4())
     img = photo_file.download(f_name)
     faces = find_face(img)
